@@ -32,7 +32,7 @@ def reactive_calc_combined():
     return deque_snapshot, df, new_dictionary_entry
 
 # UI Definition
-ui.page_opts(title="PyShiny Express: Antarctic Explorer", fillable=True)
+ui.page_opts(title="Antarctic Temperature Dashbaord", fillable=True)
 
 with ui.layout_columns(fill=True):
     with ui.value_box(showcase=icon_svg("clock"),theme="bg-gradient-blue-purple", fill=False):
@@ -43,7 +43,7 @@ with ui.layout_columns(fill=True):
             return f"{latest_dictionary_entry['temp']} °C"
 
     # Adding Gauge Chart below the current temperature box
-    with ui.card(full_screen= True):
+    with ui.card(full_screen=True):
         ui.card_header("Current Temperature Indicator")
         @render_plotly
         def display_gauge():
@@ -92,21 +92,38 @@ with ui.layout_columns(fill=True):
             _, df, _ = reactive_calc_combined()
             if not df.empty:
                 df["timestamp"] = pd.to_datetime(df["timestamp"])
+                # Removed trend line part
                 fig = px.scatter(df,
                     x="timestamp",
                     y="temp",
-                    title="Temperature Readings with Trend Line",
+                    title="Temperature Readings",
                     labels={"temp": "Temperature (°C)", "timestamp": "Time"},
                     color_discrete_sequence=["blue"])
-
-                x_vals = range(len(df))
-                y_vals = df["temp"]
-                slope, intercept, _, _, _ = stats.linregress(x_vals, y_vals)
-                df['trend_line'] = [slope * x + intercept for x in x_vals]
-                fig.add_scatter(x=df["timestamp"], y=df['trend_line'], mode='lines', name='Trend Line')
                 fig.update_layout(xaxis_title="Time", yaxis_title="Temperature (°C)")
                 return fig
             return px.scatter()
+
+    with ui.card(full_screen=True):
+        ui.card_header("Most Recent Temperature Readings (Bar Graph)")
+        @render_plotly
+        def display_bar_graph():
+            _, df, _ = reactive_calc_combined()
+            
+            # Select the 5 most recent temperature readings
+            df = df.tail(5)
+            
+            if not df.empty:
+                fig = px.bar(df, 
+                             x="timestamp", 
+                             y="temp", 
+                             title="5 Most Recent Temperature Readings",
+                             labels={"temp": "Temperature (°C)", "timestamp": "Time"},
+                             color="temp",  # Color bars based on temperature value
+                             color_continuous_scale="Blues")  # Using a blue color scale
+                
+                fig.update_layout(xaxis_title="Time", yaxis_title="Temperature (°C)")
+                return fig
+            return px.bar()
 
     with ui.card(full_screen=True):
         ui.card_header("McMurdo Station Location")
